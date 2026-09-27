@@ -147,11 +147,11 @@ body {
 }
 
 [data-theme="dark"] .brand-logo-purple {
-  display: none;
+  display: none !important;
 }
 
 [data-theme="dark"] .brand-logo-white {
-  display: block;
+  display: block !important;
 }
 
 .brand-badge {
