@@ -133,18 +133,13 @@ body {
 .brand-logo {
   height: 26px;
   width: auto;
-  color: #6331d8;
   display: block;
   flex-shrink: 0;
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition: transform 0.2s ease;
 }
 
 .brand-logo:hover {
   transform: scale(1.04);
-}
-
-[data-theme="dark"] .brand-logo {
-  color: #ffffff;
 }
 
 .brand-badge {
