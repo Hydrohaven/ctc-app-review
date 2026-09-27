@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CTC Designer Application Reviewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app" class="app-layout">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-badge">CTC</span>
+        <h1 class="brand-title">Designer Application Review</h1>
+        <span class="status-summary" id="reviewedCounter">0 / 0 Reviewed</span>
+      </div>
+
+      <div class="topbar-actions">
+        <label class="btn btn-secondary file-upload-label" title="Upload application CSV">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>Import CSV</span>
+          <input type="file" id="csvFileInput" accept=".csv" class="hidden-input">
+        </label>
+
+        <button id="exportBtn" class="btn btn-secondary" title="Export review decisions and notes to CSV">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Export Decisions</span>
+        </button>
+
+        <button id="themeToggleBtn" class="btn btn-icon" title="Toggle theme (Light/Dark)">
+          <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area: Sidebar + Detail Pane -->
+    <div class="workspace">
+      <!-- Left Sidebar: Candidate List -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div class="search-box">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="searchInput" placeholder="Search applicants, majors... (Press /)" autocomplete="off">
+            <kbd class="shortcut-key">/</kbd>
+          </div>
+
+          <div class="filters-row">
+            <select id="verdictFilter" class="filter-select">
+              <option value="all">All Verdicts</option>
+              <option value="unreviewed">Unreviewed</option>
+              <option value="interview">Interview</option>
+              <option value="maybe">Maybe</option>
+              <option value="reject">Reject</option>
+              <option value="starred">Starred ★</option>
+            </select>
+
+            <select id="standingFilter" class="filter-select">
+              <option value="all">All Years</option>
+              <option value="1st">1st Year</option>
+              <option value="2nd">2nd Year</option>
+              <option value="3rd">3rd Year</option>
+              <option value="4th">4th Year</option>
+            </select>
+
+            <select id="memberFilter" class="filter-select">
+              <option value="all">All Types</option>
+              <option value="returning">Returning</option>
+              <option value="new">New Applicants</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Candidate Cards List -->
+        <div id="applicantList" class="applicant-list" role="listbox">
+          <!-- Rendered via JS -->
+        </div>
+
+        <div class="sidebar-footer">
+          <span class="keyboard-tip"><kbd>J</kbd>/<kbd>K</kbd> navigate &bull; <kbd>1</kbd>-<kbd>4</kbd> verdict</span>
+        </div>
+      </aside>
+
+      <!-- Right Detail Pane: Application Reader -->
+      <main class="reader-pane" id="readerPane">
+        <div id="emptyState" class="empty-state">
+          <div class="empty-state-icon">📄</div>
+          <h3>Select an applicant to review</h3>
+          <p>Use the list on the left or press <kbd>J</kbd> / <kbd>K</kbd> to step through submissions.</p>
+        </div>
+
+        <div id="applicantDetail" class="applicant-detail hidden">
+          <!-- Top Info Header -->
+          <div class="detail-header">
+            <div class="applicant-title-area">
+              <div class="name-row">
+                <h2 id="detailName" class="applicant-name">Applicant Name</h2>
+                <button id="starBtn" class="btn-star" title="Star this candidate (Key: S)">★</button>
+                <span id="detailReturningBadge" class="badge badge-returning">Returning</span>
+                <span id="detailPortfolioBadge" class="badge badge-portfolio">Portfolio Included</span>
+              </div>
+              <div class="applicant-meta-row" id="detailMetaRow">
+                <!-- Meta items like Email, Pronouns, Year, Major -->
+              </div>
+              <!-- Action Links Bar: Resume, Portfolio, LinkedIn -->
+              <div class="external-links-header" id="detailLinksBar">
+                <!-- Populated via JS: Resume, Portfolio, LinkedIn -->
+              </div>
+            </div>
+
+            <!-- Review Actions & Decision Panel -->
+            <div class="verdict-controls">
+              <div class="verdict-button-group">
+                <button type="button" class="btn-verdict" data-verdict="interview">
+                  <span class="verdict-indicator dot-green"></span>
+                  Interview
+                  <kbd>1</kbd>
+                </button>
+                <button type="button" class="btn-verdict" data-verdict="maybe">
+                  <span class="verdict-indicator dot-yellow"></span>
+                  Maybe
+                  <kbd>2</kbd>
+                </button>
+                <button type="button" class="btn-verdict" data-verdict="reject">
+                  <span class="verdict-indicator dot-red"></span>
+                  Pass
+                  <kbd>3</kbd>
+                </button>
+                <button type="button" class="btn-verdict" data-verdict="clear" title="Clear decision">
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reviewer Personal Notes Bar -->
+          <div class="reviewer-notes-section">
+            <div class="notes-header">
+              <label for="reviewerNotesInput">Your Private Notes & Evaluation</label>
+              <span class="auto-save-indicator" id="notesSaveIndicator">All changes saved</span>
+            </div>
+            <textarea id="reviewerNotesInput" placeholder="Add strengths, design critique, concerns, interview questions to ask..." rows="3"></textarea>
+          </div>
+
+          <!-- Content Sections: Questions & Answers -->
+          <div class="reading-body" id="detailResponses">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="sample-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
