@@ -1,6 +1,6 @@
-# CTC Designer Application Reviewer
+# CTC Written Application Reviewer
 
-A clean, distraction-free web tool for reviewing Commit the Change (CTC) designer applications.
+A clean, distraction-free web tool for reviewing Commit the Change (CTC) written applications (Developers, Designers, and more).
 
 ## Features
 - **Application Reader**: Clean, readable typography formatted for long-form essay responses without cognitive fatigue.
