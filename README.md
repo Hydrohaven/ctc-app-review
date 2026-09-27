@@ -4,14 +4,12 @@ A clean, distraction-free web tool for reviewing Commit the Change (CTC) written
 
 ## Features
 - **Application Reader**: Clean, readable typography formatted for long-form essay responses without cognitive fatigue.
-- **Keyboard-Driven Workflow**:
+- **Keyboard Shortcuts**:
   - `J` / `K` or `↓` / `↑`: Next / Previous applicant
-  - `1`: Mark Interview
-  - `2`: Mark Maybe
-  - `3`: Mark Pass
-  - `4`: Clear decision
-  - `S`: Star applicant
-  - `/`: Search applicants & essays
+  - `S`: Star candidate
+  - `/`: Focus search bar
+  - `Esc`: Unfocus input
+- **Review Decisions**: One-click verdict buttons to mark **Interview**, **Maybe**, **Pass**, or **Clear**.
 - **Quick Links**: One-click direct links to applicant Resumes, Portfolios (Figma/Web), and LinkedIn profiles.
 - **Private Notes**: Auto-saving private notes and evaluation scratchpad for each candidate.
 - **CSV Import / Export**:
