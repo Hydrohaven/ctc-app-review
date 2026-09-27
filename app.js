@@ -473,11 +473,13 @@
 
   function extractUrlsFromText(text) {
     if (!text) return [];
-    const urlRegex = /(https?:\/\/[^\s,，;]+|[a-zA-Z0-9-]+\.(?:com|me|site|website|app|github\.io|framer\.website|figma\.site)[^\s,，;]*)/gi;
+    const urlRegex = /(https?:\/\/[^\s,，;]+|[a-zA-Z0-9-]+\.(?:com|me|site|website|app|art|tech|net|org|io|dev|cloud|cc|ai|xyz|github\.io|framer\.website|figma\.site)[^\s,，;]*|linkedin\.com\/[^\s,，;]+|inkedin\.com\/[^\s,，;]+|github\.com\/[^\s,，;]+)/gi;
     const matches = text.match(urlRegex) || [];
     return matches.map(u => {
-      let clean = u.replace(/[，,;)]+$/, '');
-      if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+      let clean = u.replace(/[，,;)"'\]]+$/, '');
+      if (clean.toLowerCase().startsWith('inkedin.com/')) {
+        clean = 'https://www.l' + clean;
+      } else if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
         clean = 'https://' + clean;
       }
       return clean;
@@ -509,6 +511,7 @@
       webDevPrompt: -1,
       workExpCol: -1,
       optionalLinksCol: -1,
+      linkedInCol: -1,
       questionIndices: []
     };
 
@@ -516,8 +519,11 @@
       const hl = h.toLowerCase().trim();
 
       // Skip internal reviewer columns
-      if (hl.includes('reviewer') || hl.startsWith('column 7') || hl === 'column 14') {
-        if (hl === 'column 14') colIndex.minor = idx;
+      if (hl.includes('reviewer') || hl.startsWith('column 7')) {
+        return;
+      }
+      if (hl === 'column 14') {
+        colIndex.minor = idx;
         return;
       }
 
@@ -529,7 +535,7 @@
         colIndex.email = idx;
       } else if (colIndex.pronouns === -1 && hl.includes('pronoun')) {
         colIndex.pronouns = idx;
-      } else if (colIndex.standing === -1 && (hl === 'year' || hl.includes('standing'))) {
+      } else if (colIndex.standing === -1 && (hl === 'year' || (hl.includes('standing') && !hl.includes('notstanding')))) {
         colIndex.standing = idx;
       } else if (colIndex.gradDate === -1 && (hl.includes('grad') || hl.includes('graduation'))) {
         colIndex.gradDate = idx;
@@ -541,16 +547,17 @@
         colIndex.returning = idx;
       } else if (colIndex.resume === -1 && (hl.includes('resumé') || hl.includes('resume') || hl.includes('cv'))) {
         colIndex.resume = idx;
-      } else if (hl.includes('fee') || hl.includes('$10')) {
-        // Ignored acknowledgment
+      } else if (colIndex.linkedInCol === -1 && hl.includes('linkedin')) {
+        colIndex.linkedInCol = idx;
       } else if (hl.includes('web development') && hl.includes('previous work')) {
         colIndex.webDevPrompt = idx;
-      } else if (hl.includes('if not, briefly describe whatever technical/coding experience')) {
+      } else if (hl.includes('technical/coding experience') || hl.includes('technical experience')) {
         colIndex.workExpCol = idx;
-      } else if (hl.includes('optional') && (hl.includes('github') || hl.includes('portfolio') || hl.includes('personal website'))) {
+      } else if (hl.includes('optional') && (hl.includes('github') || hl.includes('portfolio') || hl.includes('personal website') || hl.includes('materials that showcase'))) {
         colIndex.optionalLinksCol = idx;
+      } else if (hl.includes('fee') || hl.includes('$10')) {
+        // Ignored membership fee acknowledgment
       } else {
-        // Collect question / essay response columns
         colIndex.questionIndices.push({ index: idx, question: h });
       }
     });
@@ -558,8 +565,8 @@
     // Fallbacks if headers weren't named descriptively
     if (colIndex.name === -1 && headers.length > 7) colIndex.name = 7;
     if (colIndex.email === -1 && headers.length > 8) colIndex.email = 8;
-    if (colIndex.workExpCol === -1 && headers.length > 27) colIndex.workExpCol = 27;
-    if (colIndex.optionalLinksCol === -1 && headers.length > 28) colIndex.optionalLinksCol = 28;
+    if (colIndex.workExpCol === -1 && headers.length > 26) colIndex.workExpCol = 26;
+    if (colIndex.optionalLinksCol === -1 && headers.length > 27) colIndex.optionalLinksCol = 27;
 
     const parsedApplicants = dataRows.map((row, rIdx) => {
       const getVal = (idx) => (idx >= 0 && row[idx] ? row[idx].trim() : '');
@@ -567,18 +574,35 @@
       const isReturning = getVal(colIndex.returning).toLowerCase().includes('yes');
       const resumeUrl = getVal(colIndex.resume);
 
-      // Smart link extraction from Col 27, Col 28, and whole row
-      const col27Val = getVal(colIndex.workExpCol);
-      const col28Val = getVal(colIndex.optionalLinksCol);
-      const allExtractedUrls = [...extractUrlsFromText(col27Val), ...extractUrlsFromText(col28Val)];
+      // Collect all candidate text sources for URLs
+      const textPool = [];
+      if (colIndex.workExpCol >= 0) textPool.push(getVal(colIndex.workExpCol));
+      if (colIndex.optionalLinksCol >= 0) textPool.push(getVal(colIndex.optionalLinksCol));
+      if (colIndex.linkedInCol >= 0) textPool.push(getVal(colIndex.linkedInCol));
+
+      // Scan all cells in this row for any missed links (like in the last column, or in text boxes)
+      row.forEach((cellVal, cIdx) => {
+        if (cIdx <= 5 || cIdx === colIndex.resume) return; // Skip internal reviewer columns
+        if (cellVal && (cellVal.toLowerCase().includes('linkedin.com') || cellVal.toLowerCase().includes('inkedin.com') || cellVal.toLowerCase().includes('github.com'))) {
+          textPool.push(cellVal);
+        }
+      });
+
+      const allExtractedUrls = [];
+      textPool.forEach(txt => {
+        extractUrlsFromText(txt).forEach(u => {
+          if (!allExtractedUrls.includes(u)) allExtractedUrls.push(u);
+        });
+      });
 
       let linkedInUrl = '';
       const portfolioLinks = [];
 
       allExtractedUrls.forEach(url => {
-        if (url.toLowerCase().includes('linkedin.com') && !linkedInUrl) {
-          linkedInUrl = url;
-        } else if (!portfolioLinks.some(p => p.url === url)) {
+        const uLower = url.toLowerCase();
+        if (uLower.includes('linkedin.com')) {
+          if (!linkedInUrl) linkedInUrl = url;
+        } else if (url !== resumeUrl && !portfolioLinks.some(p => p.url === url)) {
           portfolioLinks.push({
             url: url,
             label: getLinkLabel(url)
@@ -586,10 +610,19 @@
         }
       });
 
-      // If no portfolio link was found in col 27/28, check if col 27 had a text note
+      // Also check if dedicated linkedInCol had raw text without url scheme
+      if (!linkedInUrl && colIndex.linkedInCol >= 0) {
+        const rawL = getVal(colIndex.linkedInCol);
+        if (rawL && (rawL.includes('linkedin.com') || rawL.includes('inkedin.com'))) {
+          linkedInUrl = rawL.startsWith('http') ? rawL : 'https://' + rawL.replace(/^www\./, '');
+        }
+      }
+
+      // If no portfolio link was found in workExpCol, check if it had a text note
       let portfolioNote = '';
-      if (col27Val && !col27Val.startsWith('http') && !col27Val.includes('.com') && !col27Val.includes('.site') && !col27Val.includes('.app')) {
-        portfolioNote = col27Val;
+      const workVal = getVal(colIndex.workExpCol);
+      if (workVal && !workVal.startsWith('http') && !workVal.includes('.com') && !workVal.includes('.site') && !workVal.includes('.app')) {
+        portfolioNote = workVal;
       }
 
       const answers = [];
