@@ -798,14 +798,6 @@
       } else if (e.key === 'k' || e.key === 'K' || e.key === 'ArrowUp') {
         e.preventDefault();
         navigateApplicant(-1);
-      } else if (e.key === '1') {
-        setVerdict('interview');
-      } else if (e.key === '2') {
-        setVerdict('maybe');
-      } else if (e.key === '3') {
-        setVerdict('reject');
-      } else if (e.key === '4') {
-        setVerdict('clear');
       } else if (e.key === 's' || e.key === 'S') {
         toggleStar();
       }
